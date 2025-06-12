@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { UserWarning } from './UserWarning';
 
@@ -8,8 +8,13 @@ import { Todo } from './types/Todo';
 import { FilteredBy } from './types/filteredBy';
 
 import { errorNotification } from './constants/errors';
-import { deleteTodo, getTodos, USER_ID, updateTodo } from './api/todos';
-import { focusTodoInput } from './helpers/inputFocus';
+import {
+  deleteTodo,
+  getTodos,
+  USER_ID,
+  updateTodo,
+  addTodos,
+} from './api/todos';
 import { filterTodos } from './helpers/filter';
 
 import { FooterTodo } from './components/FooterTodo';
@@ -26,6 +31,8 @@ export const App: React.FC = () => {
   const [isTempTodoCreating, setIsTempTodoCreating] = useState(false);
   const [deletingTodoIds, setDeletingTodoIds] = useState<number[]>([]);
 
+  const inputField = useRef<HTMLInputElement>(null);
+
   const handleDelete = async (id: number): Promise<void> => {
     setDeletingTodoIds(prev => [...prev, id]);
 
@@ -37,7 +44,40 @@ export const App: React.FC = () => {
       throw error;
     } finally {
       setDeletingTodoIds(prev => prev.filter(todoId => todoId !== id));
-      focusTodoInput();
+      inputField.current?.focus();
+    }
+  };
+
+  const showTitleError = () => {
+    setErrorMessage(errorNotification.title);
+
+    setTimeout(() => {
+      setErrorMessage('');
+    }, 3000);
+  };
+
+  const handleAddTodo = async (todo: Todo): Promise<boolean> => {
+    const newTodo = {
+      ...todo,
+      userId: USER_ID,
+    };
+
+    setTempTodo(newTodo);
+    setIsTempTodoCreating(true);
+
+    try {
+      const created = await addTodos(newTodo);
+
+      setTodos(prev => [...prev, created]);
+
+      return true;
+    } catch (error) {
+      setErrorMessage(errorNotification.add);
+
+      return false;
+    } finally {
+      setTempTodo(null);
+      setIsTempTodoCreating(false);
     }
   };
 
@@ -130,12 +170,11 @@ export const App: React.FC = () => {
       <div className="todoapp__content">
         <HeaderTodo
           todos={todos}
-          setErrorMessage={setErrorMessage}
-          setTodos={setTodos}
-          setTempTodo={setTempTodo}
+          onInvalidTitle={showTitleError}
           isTempTodoCreating={isTempTodoCreating}
-          setIsTempTodoCreating={setIsTempTodoCreating}
+          inputField={inputField}
           toggleAllTodos={toggleAllTodos}
+          onAddTodo={handleAddTodo}
         />
 
         {!isTodosLoading && (

@@ -2,78 +2,61 @@ import classNames from 'classnames';
 import { FC, useEffect, useState } from 'react';
 import { Todo } from '../../types/Todo';
 import React from 'react';
-import { errorNotification } from '../../constants/errors';
-import { addTodos, USER_ID } from '../../api/todos';
-import { focusTodoInput } from '../../helpers/inputFocus';
 
 interface Props {
   todos: Todo[];
-  setTodos: React.Dispatch<React.SetStateAction<Todo[]>>;
-  setErrorMessage: (message: string) => void;
-  setIsTempTodoCreating: (isCreating: boolean) => void;
-  setTempTodo: (todo: Todo | null) => void;
-  isTempTodoCreating: boolean;
+  onInvalidTitle: () => void;
+  onAddTodo: (todo: Todo) => Promise<boolean>;
   toggleAllTodos: () => void;
+  isTempTodoCreating: boolean;
+  inputField: React.RefObject<HTMLInputElement>;
 }
 
 export const HeaderTodo: FC<Props> = ({
   todos,
-  setErrorMessage,
-  setTodos,
-  setIsTempTodoCreating,
-  setTempTodo,
-  isTempTodoCreating,
+  onAddTodo,
+  onInvalidTitle,
   toggleAllTodos,
+  isTempTodoCreating,
+  inputField,
 }: Props) => {
-  const areAllTodosActive = todos.every(todo => todo.completed);
+  const areAllCompleted =
+    todos.length > 0 && todos.every(todo => todo.completed);
+
   const [title, setTitle] = useState('');
 
-  useEffect(() => {
-    focusTodoInput();
-  }, []);
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setErrorMessage('');
-    setTitle(event.target.value);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
   };
 
-  const handleCreation = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const clearTitle = title.trim();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    const newTodo: Todo = {
-      id: 0,
-      userId: USER_ID,
-      title: clearTitle,
-      completed: false,
-    };
+    const trimmed = title.trim();
 
-    if (!clearTitle) {
-      setErrorMessage(errorNotification.title);
-      setTimeout(() => {
-        setErrorMessage('');
-      }, 3000);
+    if (!trimmed) {
+      onInvalidTitle();
 
       return;
     }
 
-    setTempTodo(newTodo);
-    setIsTempTodoCreating(true);
-    addTodos(newTodo)
-      .then(createdTodo => {
-        setTodos((prev: Todo[]) => [...prev, createdTodo]);
-        setTitle('');
-      })
-      .catch(() => {
-        setErrorMessage(errorNotification.add);
-        setTimeout(() => setErrorMessage(''), 3000);
-      })
-      .finally(() => {
-        setTempTodo(null);
-        setIsTempTodoCreating(false);
-        setTimeout(() => focusTodoInput(), 0);
-      });
+    const success = await onAddTodo({
+      id: 0,
+      title: trimmed,
+      userId: 0,
+      completed: false,
+    });
+
+    if (success) {
+      setTitle('');
+    }
   };
+
+  useEffect(() => {
+    if (!isTempTodoCreating) {
+      inputField.current?.focus();
+    }
+  }, [isTempTodoCreating, inputField]);
 
   return (
     <header className="todoapp__header">
@@ -82,23 +65,20 @@ export const HeaderTodo: FC<Props> = ({
         <button
           type="button"
           className={classNames('todoapp__toggle-all', {
-            active: areAllTodosActive,
+            active: areAllCompleted,
           })}
           data-cy="ToggleAllButton"
-          disabled={isTempTodoCreating}
-          onClick={() => {
-            toggleAllTodos();
-          }}
+          onClick={toggleAllTodos}
         />
       )}
 
-      {/* Add a todo on form submit */}
-      <form onSubmit={handleCreation}>
+      <form onSubmit={handleSubmit}>
         <input
           data-cy="NewTodoField"
           type="text"
           value={title}
-          onChange={handleInputChange}
+          onChange={handleChange}
+          ref={inputField}
           className="todoapp__new-todo"
           placeholder="What needs to be done?"
           disabled={isTempTodoCreating}
