@@ -1,7 +1,6 @@
 // DON'T use conditional rendering to hide the notification
 
 import classNames from 'classnames';
-import React from 'react';
 import { FC } from 'react';
 
 interface Props {

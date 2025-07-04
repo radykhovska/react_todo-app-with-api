@@ -1,9 +1,9 @@
 import { FC } from 'react';
-import { TodoItem } from '../TodoItem';
-import { Todo } from '../../types/Todo';
+import { Todo } from 'types/Todo';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 
 import './todoTransition.css';
+import { TodoItem } from 'components/TodoItem';
 
 interface Props {
   todos: Todo[];

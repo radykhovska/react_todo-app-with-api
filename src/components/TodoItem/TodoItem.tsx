@@ -1,11 +1,11 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import classNames from 'classnames';
-import { Todo } from '../../types/Todo';
+import { Todo } from 'types/Todo';
 import { FC, useEffect, useRef, useState } from 'react';
 
 interface Props {
   todo: Todo;
-  isLoading?: boolean;
+  isLoading: boolean;
   handleDelete?: () => Promise<void>; // 🔧 змінено тип функції
   isDeleting: boolean;
   onToggle?: () => Promise<void>;

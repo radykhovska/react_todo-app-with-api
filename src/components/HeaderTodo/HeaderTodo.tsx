@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { FC, useEffect, useState } from 'react';
-import { Todo } from '../../types/Todo';
+import { Todo } from 'types/Todo';
 import React from 'react';
 
 interface Props {

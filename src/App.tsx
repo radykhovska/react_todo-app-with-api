@@ -1,13 +1,11 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
-/* eslint-disable jsx-a11y/control-has-associated-label */
 import React, { useEffect, useRef, useState } from 'react';
 
 import { UserWarning } from './UserWarning';
 
-import { Todo } from './types/Todo';
-import { FilteredBy } from './types/filteredBy';
+import { Todo } from 'types/Todo';
+import { FilteredBy } from 'types/filteredBy';
 
-import { errorNotification } from './constants/errors';
+import { errorNotification } from 'constants/errors';
 import {
   deleteTodo,
   getTodos,
@@ -15,12 +13,12 @@ import {
   updateTodo,
   addTodos,
 } from './api/todos';
-import { filterTodos } from './helpers/filter';
+import { filterTodos } from 'helpers/filter';
 
-import { FooterTodo } from './components/FooterTodo';
-import { HeaderTodo } from './components/HeaderTodo';
-import { TodoList } from './components/TodoList';
-import { ErrorNotification } from './components/ErrorNotification';
+import { FooterTodo } from 'components/FooterTodo';
+import { HeaderTodo } from 'components/HeaderTodo';
+import { TodoList } from 'components/TodoList';
+import { ErrorNotification } from 'components/ErrorNotification';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -94,15 +92,22 @@ export const App: React.FC = () => {
   }, [errorMessage]);
 
   useEffect(() => {
-    setIsTodosLoading(true);
-    setErrorMessage('');
+    const loadTodos = async () => {
+      try {
+        setIsTodosLoading(true);
+        setErrorMessage('');
 
-    getTodos()
-      .then(setTodos)
-      .catch(() => {
+        const loadedTodos = await getTodos();
+
+        setTodos(loadedTodos);
+      } catch {
         setErrorMessage(errorNotification.load);
-      })
-      .finally(() => setIsTodosLoading(false));
+      } finally {
+        setIsTodosLoading(false);
+      }
+    };
+
+    loadTodos();
   }, []);
 
   if (!USER_ID) {
@@ -111,21 +116,21 @@ export const App: React.FC = () => {
 
   const filteredTodos = filterTodos(todos, filteredBy);
 
-  const toggleTodo = (updatedTodo: Todo): Promise<void> => {
-    return updateTodo({
-      ...updatedTodo,
-      completed: !updatedTodo.completed,
-    })
-      .then(todoToUpdate => {
-        setTodos(prevTodos =>
-          prevTodos.map(todo =>
-            todo.id === todoToUpdate.id ? todoToUpdate : todo,
-          ),
-        );
-      })
-      .catch(() => {
-        setErrorMessage(errorNotification.update);
+  const toggleTodo = async (updatedTodo: Todo): Promise<void> => {
+    try {
+      const todoToUpdate = await updateTodo({
+        ...updatedTodo,
+        completed: !updatedTodo.completed,
       });
+
+      setTodos(prevTodos =>
+        prevTodos.map(todo =>
+          todo.id === todoToUpdate.id ? todoToUpdate : todo,
+        ),
+      );
+    } catch {
+      setErrorMessage(errorNotification.update);
+    }
   };
 
   const toggleAllTodos = () => {
@@ -149,19 +154,19 @@ export const App: React.FC = () => {
       });
   };
 
-  const renameTodo = (todoToUpdate: Todo): Promise<void> => {
-    return updateTodo({ ...todoToUpdate })
-      .then(updatedTodo => {
-        setTodos(currentTodos =>
-          currentTodos.map(todo =>
-            todo.id === updatedTodo.id ? updatedTodo : todo,
-          ),
-        );
-      })
-      .catch(error => {
-        setErrorMessage(errorNotification.update);
-        throw error;
-      });
+  const renameTodo = async (todoToUpdate: Todo): Promise<void> => {
+    try {
+      const updatedTodo = await updateTodo({ ...todoToUpdate });
+
+      setTodos(currentTodos =>
+        currentTodos.map(todo =>
+          todo.id === updatedTodo.id ? updatedTodo : todo,
+        ),
+      );
+    } catch (error) {
+      setErrorMessage(errorNotification.update);
+      throw error;
+    }
   };
 
   return (
